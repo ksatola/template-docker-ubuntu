@@ -1,0 +1,69 @@
+# Base image
+#FROM python:3 
+FROM ubuntu:20.04
+
+# Variables
+ARG PYTHON_SYS_VERSION
+
+# Set a directory for the app
+#WORKDIR /home/ksatola
+
+# Copy all the files to the container
+COPY . .
+
+# Install dependencies
+RUN export DEBIAN_FRONTEND=noninteractive \
+	&& apt-get update \
+	#&& apt-get -o Dpkg::Options::="--force-confold" upgrade -q -y --force-yes \ # this can break dependencies
+    && apt-get -o Dpkg::Options::="--force-confold" dist-upgrade -q -y --force-yes \
+	#&& apt-get -y install --no-install-recommends build-essential ruby-full \
+	&& apt-get -qq -y install curl
+    
+# Locales
+RUN apt-get update && apt-get install -y locales && rm -rf /var/lib/apt/lists/* \
+    && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
+ENV LANG en_US.utf8
+
+# Python (base system version)
+# use 'make altinstall' not to override default system python3 library
+RUN PYTHON_SYS_VERSION=$PYTHON_SYS_VERSION \
+	&& apt-get update \
+	&& apt-get -qq -y install libssl-dev zlib1g-dev openssl build-essential wget build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libsqlite3-dev libreadline-dev libffi-dev libbz2-dev \
+	&& wget https://www.python.org/ftp/python/$PYTHON_SYS_VERSION/Python-$PYTHON_SYS_VERSION.tgz \
+	&& tar xzvf Python-$PYTHON_SYS_VERSION.tgz \
+	&& cd Python-$PYTHON_SYS_VERSION \
+	&& ./configure \
+	&& make \
+	&& make install \ 
+	&& cd .. \
+	&& rm -r Python-$PYTHON_SYS_VERSION \
+	&& rm Python-$PYTHON_SYS_VERSION.tgz \ 
+	&& echo alias python="python3" >> ~/.bashrc \
+	&& apt -qq -y install python3-pip
+
+# Homebrew
+# https://medium.com/@edwardbaeg9/using-homebrew-on-windows-10-with-windows-subsystem-for-linux-wsl-c7f1792f88b3
+RUN apt-get -qq -y install git ruby \
+	&& sh -c "$(curl -fsSL https://raw.githubusercontent.com/Linuxbrew/install/master/install.sh)" \
+	&& CI=1 /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" \
+	&& echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> ~/.bashrc \
+	&& eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+	
+# Pyenv and virtualenv
+RUN brew install pyenv \
+	&& echo export PATH="$HOME/.pyenv/bin:$PATH" >> ~/.bashrc \
+	&& echo 'eval "$(pyenv init --path)"' >> ~/.bashrc \
+	&& echo 'eval "$(pyenv init -)"' >> ~/.bashrc \
+	&& pip install virtualenv \
+	&& pip install virtualenvwrapper \
+	&& brew install pyenv-virtualenv
+
+
+#RUN pip install --no-cache-dir -r requirements.txt
+
+# Tell the port number the container should expose (the app is working on this port)
+#EXPOSE 5000
+
+# Run the command
+# python ./app.py
+#CMD ["python", "./app.py"]# Base image
