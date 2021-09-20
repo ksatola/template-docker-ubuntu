@@ -1,0 +1,24 @@
+# Base image
+FROM ksatola/ubuntu-dev-base-python3.9.7
+
+# Variables
+#ARG PYTHON_SYS_VERSION
+
+# Set a directory for the app
+#WORKDIR /root
+
+# Copy all the files to the container
+COPY . .
+
+# Install dependencies
+RUN export DEBIAN_FRONTEND=noninteractive \
+	&& apt-get update \
+	#&& apt-get -o Dpkg::Options::="--force-confold" upgrade -q -y --force-yes \ # this can break dependencies
+    && apt-get -o Dpkg::Options::="--force-confold" dist-upgrade -q -y --force-yes \
+	&& apt-get -qq -y install curl
+    
+RUN pip install --no-cache-dir -r reqs_tfx1.2.0.txt
+
+#pip install jupyterlab
+#pip install pandas
+#pip install tfx
