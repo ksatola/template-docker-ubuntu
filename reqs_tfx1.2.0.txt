@@ -1,0 +1,3 @@
+jupyterlab
+pandas
+tfx==1.2.0
